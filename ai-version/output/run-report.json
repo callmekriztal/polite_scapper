@@ -1,0 +1,14 @@
+{
+  "run_timestamp": "2026-09-18T06:42:09.728576+00:00",
+  "duration_seconds": 43.352,
+  "catalogue_pages": 3,
+  "discovered_urls": 60,
+  "unique_urls": 60,
+  "detail_pages": 60,
+  "successful_records": 60,
+  "failed_records": 0,
+  "cache_hits": 0,
+  "network_fetches": 63,
+  "broken_pages": 0,
+  "output_record_count": 60
+}
