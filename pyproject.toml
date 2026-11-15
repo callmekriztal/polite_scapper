@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "polite-scraper"
+description = "A rate-limited, cache-first web scraper with a rich terminal UI, robots.txt awareness, and Pydantic validation."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "callmekriztal" }]
+keywords = ["scraper", "web-scraping", "crawler", "polite", "beautifulsoup", "cli"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "pydantic>=2.0.0",
+    "rich>=13.0.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/callmekriztal/polite_scapper"
+Repository = "https://github.com/callmekriztal/polite_scapper"
+Issues = "https://github.com/callmekriztal/polite_scapper/issues"
+
+[project.scripts]
+polite-scraper = "polite_scraper.main:main"
+
+[tool.setuptools]
+packages = ["polite_scraper"]
+
+[tool.setuptools.dynamic]
+version = { attr = "polite_scraper.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

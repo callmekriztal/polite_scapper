@@ -11,13 +11,14 @@ class Config:
     TIMEOUT: int = int(os.getenv("TIMEOUT", "10"))
     MIN_DELAY_SECONDS: float = float(os.getenv("MIN_DELAY_SECONDS", "0.5"))
     
-    # Paths (repo root is the package's parent directory)
-    BASE_DIR: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent)
-    CACHE_DIR: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "data" / "cache")
+    # Data paths are relative to the working directory, not the package location,
+    # so an installed copy (site-packages) never writes inside itself.
+    # From the repo root this resolves to the same <repo>/data layout as before.
+    CACHE_DIR: Path = field(default_factory=lambda: Path.cwd() / "data" / "cache")
     # Root for per-run output folders (e.g. data/runs/books-toscrape)
-    OUTPUT_ROOT: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "data" / "runs")
+    OUTPUT_ROOT: Path = field(default_factory=lambda: Path.cwd() / "data" / "runs")
     # The active run's output folder, resolved at runtime from the website name
-    OUTPUT_DIR: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent / "data" / "runs")
+    OUTPUT_DIR: Path = field(default_factory=lambda: Path.cwd() / "data" / "runs")
     
     BASE_URL: str = "https://books.toscrape.com/"
     START_URL: str = "https://books.toscrape.com/catalogue/page-1.html"

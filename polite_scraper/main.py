@@ -158,7 +158,7 @@ def run(args) -> int:
         pages=config.MAX_CATALOGUE_PAGES,
         delay=config.MIN_DELAY_SECONDS,
         cache_dir=str(config.CACHE_DIR),
-        run_dir=str(run_dir.relative_to(config.BASE_DIR)),
+        run_dir=str(run_dir),
     )
 
     start_time = time.time()

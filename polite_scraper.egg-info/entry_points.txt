@@ -1,0 +1,2 @@
+[console_scripts]
+polite-scraper = polite_scraper.main:main

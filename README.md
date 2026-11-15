@@ -76,6 +76,19 @@ Fetches the seed page and checks for book-catalogue markup (`article.product_pod
 
 ## 🚀 Quickstart
 
+**Option A — install as a CLI tool** (recommended after `v1.0.0`):
+
+```bash
+# with pipx (isolated CLI install)
+pipx install polite-scraper
+
+# or from a clone
+pip install .
+polite-scraper https://books.toscrape.com
+```
+
+**Option B — from source:**
+
 ```bash
 git clone https://github.com/callmekriztal/polite_scapper.git
 cd polite_scapper
@@ -83,9 +96,7 @@ cd polite_scapper
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
 
-```bash
 # Book catalogue (auto-detected)
 python -m polite_scraper https://books.toscrape.com
 
@@ -94,6 +105,13 @@ python -m polite_scraper https://quotes.toscrape.com --mode generic --pages 5
 
 # Bare domains get https:// added automatically
 python -m polite_scraper example.com
+```
+
+With the installed CLI, the same commands are simply:
+
+```bash
+polite-scraper https://books.toscrape.com
+polite-scraper https://quotes.toscrape.com --mode generic --pages 5
 ```
 
 Every run gets **its own output folder**, named after the website:
