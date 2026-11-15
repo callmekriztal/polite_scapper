@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+from polite_scraper import __version__
 from polite_scraper.config import Config
 
 USAGE_EXAMPLES = """\
@@ -84,6 +85,11 @@ def build_parser() -> Parser:
         "--verbose",
         action="store_true",
         help="Show detailed per-request logs and raw record checkpoints",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "--name",

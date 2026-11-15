@@ -37,12 +37,16 @@ The target website is the only required argument. The mode can be set explicitly
 
 ## Installation
 
-From a release artifact:
+From PyPI (available once the first trusted-publishing release has run):
 
 ```bash
 pipx install polite-scraper
-# or
-pip install polite_scraper-1.0.0-py3-none-any.whl
+```
+
+Directly from a GitHub release, available now:
+
+```bash
+pipx install https://github.com/callmekriztal/polite_scapper/releases/download/v1.0.0/polite_scraper-1.0.0-py3-none-any.whl
 ```
 
 From source:
