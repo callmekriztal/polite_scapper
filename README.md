@@ -10,8 +10,11 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r scraper/requirements.txt
 
-# Run scraper
-python scraper/src/main.py
+# Scrape a website (pass the URL on the command line)
+python scraper/src/main.py https://books.toscrape.com
+
+# Scrape any other website (generic mode)
+python scraper/src/main.py https://quotes.toscrape.com --mode generic --pages 5
 
 # Run tests
 pytest scraper/tests/ -v

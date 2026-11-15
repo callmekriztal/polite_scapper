@@ -1,8 +1,12 @@
 import time
-from pathlib import Path
+from urllib.robotparser import RobotFileParser
+
 import requests
+
+from src import ui
 from src.config import Config
 from src.utils import url_to_cache_filename
+
 
 class Fetcher:
     """HTTP fetcher with polite rate-limiting, status checking, and HTML disk caching."""
@@ -23,6 +27,7 @@ class Fetcher:
         Returns tuple of (html_content, was_cached).
         Raises requests.HTTPError if response status != 200.
         """
+        force_refresh = force_refresh or self.config.FORCE_REFRESH
         self.config.ensure_directories()
         cache_filename = url_to_cache_filename(url)
         cache_path = self.config.CACHE_DIR / cache_filename
@@ -33,11 +38,35 @@ class Fetcher:
                 html_content = cache_path.read_text(encoding="utf-8")
                 self.cache_hits += 1
                 size_bytes = len(html_content.encode("utf-8"))
-                print(f"CACHE HIT  {url} ({size_bytes} bytes)")
+                ui.debug(f"CACHE HIT  {url} ({size_bytes} bytes)")
                 return html_content, True
             except Exception as e:
-                print(f"Cache read error for {cache_path}: {e}. Falling back to network fetch.")
+                ui.debug(f"Cache read error for {cache_path}: {e}. Falling back to network fetch.")
 
+        html_content = self._network_get(url)
+        cache_path.write_text(html_content, encoding="utf-8")
+        return html_content, False
+
+    def fetch_robots_txt(self, base_url: str) -> RobotFileParser | None:
+        """
+        Fetch robots.txt for a site. Returns a parser, or None if no robots.txt
+        exists / it cannot be fetched (treated as "no rules").
+        """
+        robots_url = base_url.rstrip("/") + "/robots.txt"
+        try:
+            response = self.session.get(robots_url, timeout=self.config.TIMEOUT)
+        except requests.RequestException as e:
+            ui.debug(f"robots.txt fetch failed for {robots_url}: {e}")
+            return None
+        if response.status_code != 200:
+            ui.debug(f"robots.txt not available ({response.status_code}) at {robots_url}")
+            return None
+
+        parser = RobotFileParser()
+        parser.parse(response.text.splitlines())
+        return parser
+
+    def _network_get(self, url: str) -> str:
         # Respect rate limit of at least MIN_DELAY_SECONDS between network requests
         now = time.time()
         elapsed = now - self.last_request_time
@@ -46,7 +75,7 @@ class Fetcher:
             time.sleep(time_to_sleep)
 
         # Make network request
-        print(f"FETCH      {url} ...")
+        ui.debug(f"FETCH      {url} ...")
         self.last_request_time = time.time()
         response = self.session.get(url, timeout=self.config.TIMEOUT)
         response.encoding = "utf-8"  # Ensure proper UTF-8 decoding for currency symbols
@@ -61,8 +90,5 @@ class Fetcher:
 
         html_content = response.text
         size_bytes = len(html_content.encode("utf-8"))
-        print(f"FETCH OK   {url} ({size_bytes} bytes)")
-
-        # Save to cache
-        cache_path.write_text(html_content, encoding="utf-8")
-        return html_content, False
+        ui.debug(f"FETCH OK   {url} ({size_bytes} bytes)")
+        return html_content

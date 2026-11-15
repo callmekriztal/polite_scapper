@@ -1,6 +1,6 @@
 # The Polite Scraper — FlyRank Internship Backend Track W5 A9
 
-A production-grade, polite web scraper in Python 3.10+ targeting [Books to Scrape](https://books.toscrape.com/), featuring local HTML caching, BeautifulSoup parsing, Pydantic validation, error resilience, and structured reporting.
+A production-grade, polite web scraper in Python 3.10+. It ships two modes: a **book mode** targeting [Books to Scrape](https://books.toscrape.com/) (catalogue crawling + product extraction) and a **generic mode** that scrapes any website you pass on the command line. Both feature local HTML caching, BeautifulSoup parsing, Pydantic validation, error resilience, structured reporting, and a polished `rich` terminal UI.
 
 ---
 
@@ -45,9 +45,36 @@ pip install -r scraper/requirements.txt
 ```
 
 ### 2. Run Scraper
+
+Give the website as the first argument:
+
 ```bash
-python scraper/src/main.py
+# Book mode (auto-detected): books.toscrape.com catalogue
+python scraper/src/main.py https://books.toscrape.com
+
+# Generic mode: any website (pages metadata: title, h1, headings, links, word counts)
+python scraper/src/main.py https://quotes.toscrape.com --mode generic --pages 5
+
+# Any URL without a scheme gets https:// added automatically
+python scraper/src/main.py example.com
 ```
+
+**CLI options**
+
+| Flag | Description | Default |
+|---|---|---|
+| `url` | Website to scrape | required |
+| `--mode auto\|book\|generic` | `auto` detects book catalogues (via `article.product_pod`) and falls back to generic | `auto` |
+| `--pages N` | Max pages to crawl | `3` |
+| `--max-links N` | Generic mode: new same-domain links followed per page | `8` |
+| `--delay SEC` | Minimum delay between network requests | `0.5` |
+| `--timeout SEC` | Request timeout | `10` |
+| `--force` | Ignore local HTML cache, re-fetch everything | off |
+| `-v, --verbose` | Show per-request logs and raw record checkpoints | off |
+
+**Output files** (in `scraper/output/`): `books.json` (book mode), `pages.json` (generic mode), `errors.json`, `run-report.json`.
+
+**Polished terminal UI**: progress bars, a run summary table, and an error table are always shown; low-level fetch/cache logs and raw-record checkpoints appear with `-v`.
 
 ### 3. Run Tests
 ```bash
@@ -61,24 +88,27 @@ pytest scraper/tests/ -v
 ```
 scraper/
 ├── src/
-│   ├── main.py          # Entrypoint & pipeline coordinator
+│   ├── main.py          # Entrypoint & pipeline coordinator (CLI)
+│   ├── cli.py           # Argument parsing & config mapping
+│   ├── ui.py            # Rich-based terminal UI (progress, tables, panels)
 │   ├── config.py        # Centralized settings & simulation hooks
-│   ├── fetcher.py       # HTTP client with caching & 500ms delay
-│   ├── crawler.py       # Catalogue discovery & pagination handler
-│   ├── extractor.py     # BeautifulSoup HTML detail extractor
-│   ├── models.py        # Pydantic data schemas
+│   ├── fetcher.py       # HTTP client with caching, robots.txt helper & 500ms delay
+│   ├── crawler.py       # Catalogue discovery & pagination handler (book mode)
+│   ├── generic.py       # Generic site crawler/extractor (any website)
+│   ├── extractor.py     # BeautifulSoup HTML detail extractor (book mode)
+│   ├── models.py        # Pydantic data schemas (BookRecord, PageRecord)
 │   ├── validator.py     # Validation logic & error handler
 │   ├── reporter.py      # Output & JSON report generator
-│   └── utils.py        # Normalization & URL helper utilities
+│   └── utils.py         # Normalization & URL helper utilities
 ├── cache/               # Saved raw HTML files (catalogue & details)
 ├── output/
-│   ├── books.json       # Validated scraped book records (60 items)
+│   ├── books.json       # Validated scraped book records (book mode)
+│   ├── pages.json       # Validated scraped page records (generic mode)
 │   ├── errors.json      # Validation/fetch errors log
 │   └── run-report.json  # Comprehensive run execution report
 ├── tests/
 │   └── test_scraper.py  # Pytest suite
 ├── README.md
-├── .gitignore
 └── requirements.txt
 ```
 
@@ -124,6 +154,7 @@ Each record stored in `output/books.json` satisfies the following Pydantic schem
 ## Politeness & Ethics Rules
 
 - **Identifying User-Agent**: Configurable via `USER_AGENT` environment variable; defaults to `FlyRankInternshipA9/1.0 (+https://github.com/YOUR_USERNAME/YOUR_REPO)`.
+- **robots.txt (generic mode)**: The generic crawler fetches and consults `robots.txt` for every site before crawling and aborts if our User-Agent is disallowed.
 - **Request Timeout**: Strict 10-second timeout on all network requests to avoid lingering open sockets.
 - **Minimum 500 ms Delay**: Enforced rate limiting (`time.sleep`) between live network HTTP requests. Cached reads execute without artificial sleep.
 - **HTTP Status Validation**: Only status `200 OK` is accepted as a successful response.
@@ -144,7 +175,7 @@ The scraper is designed to survive invalid pages or network anomalies without cr
 - Any record failing validation or detail page extraction is captured in `output/errors.json` with reason details.
 - To test broken page resilience, set the environment variable or config property `BROKEN_TEST_URL`:
   ```bash
-  BROKEN_TEST_URL="https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html" python scraper/src/main.py
+  BROKEN_TEST_URL="https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html" python scraper/src/main.py https://books.toscrape.com
   ```
   The scraper logs the simulated failure into `output/errors.json` and continues processing all remaining 59 records.
 

@@ -64,3 +64,65 @@ def test_broken_detail_page_simulation(tmp_path):
         extractor.extract_book(broken_url, "https://books.toscrape.com/catalogue/page-1.html")
     
     assert "Simulated broken page error" in str(exc_info.value)
+
+
+def test_generic_extractor_basic_page():
+    from src.generic import GenericExtractor
+
+    html = """
+    <html>
+      <head><title>My Site</title><meta name="description" content="A demo site"></head>
+      <body>
+        <h1> Welcome </h1>
+        <h2>Section</h2>
+        <a href="/about">About</a>
+        <a href="https://example.org/external">External</a>
+        <img src="x.png">
+        <p>hello world some words here</p>
+      </body>
+    </html>
+    """
+    raw = GenericExtractor().extract_page("https://example.com/", html)
+    assert raw["title"] == "My Site"
+    assert raw["h1"] == "Welcome"
+    assert raw["meta_description"] == "A demo site"
+    assert "https://example.com/about" in raw["same_domain_links"]
+    assert all("example.org" not in l for l in raw["same_domain_links"])
+    assert raw["image_count"] == 1
+    assert raw["word_count"] >= 5
+
+
+def test_generic_page_validation_rejects_empty_title():
+    from src.validator import RecordValidator
+
+    raw = {
+        "url": "https://example.com/",
+        "title": "",
+        "h1": None,
+        "meta_description": None,
+        "headings": [],
+        "same_domain_links": [],
+        "link_count": 0,
+        "image_count": 0,
+        "word_count": 0,
+        "fetched_at": "2026-09-18T10:00:00+00:00",
+    }
+    validated, error = RecordValidator.validate_page(raw)
+    assert validated is None
+    assert error is not None
+    assert error["product_url"] == raw["url"]
+
+
+def test_cli_build_config():
+    import argparse
+    from src.cli import build_config, build_parser
+
+    parser = build_parser()
+    args = parser.parse_args(["example.com", "--pages", "5", "--max-links", "12",
+                              "--delay", "1.5", "--force"])
+    config = build_config(args)
+    assert config.BASE_URL == "https://example.com/"
+    assert config.MAX_CATALOGUE_PAGES == 5
+    assert config.MAX_LINKS_PER_PAGE == 12
+    assert config.MIN_DELAY_SECONDS == 1.5
+    assert config.FORCE_REFRESH is True
