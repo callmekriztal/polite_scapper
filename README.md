@@ -5,7 +5,7 @@ A rate-limited, cache-first web scraper with a terminal UI. It identifies itself
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-10%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v1.0.0-success)](https://github.com/callmekriztal/polite_scapper/releases/tag/v1.0.0)
+[![PyPI](https://img.shields.io/badge/PyPI-polite--scraper-306998)](https://pypi.org/project/polite-scraper/)
 
 ```bash
 polite-scraper https://books.toscrape.com
@@ -37,16 +37,10 @@ The target website is the only required argument. The mode can be set explicitly
 
 ## Installation
 
-From PyPI (available once the first trusted-publishing release has run):
-
 ```bash
 pipx install polite-scraper
-```
-
-Directly from a GitHub release, available now:
-
-```bash
-pipx install https://github.com/callmekriztal/polite_scapper/releases/download/v1.0.0/polite_scraper-1.0.0-py3-none-any.whl
+# or
+pip install polite-scraper
 ```
 
 From source:
