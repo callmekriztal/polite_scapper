@@ -5,7 +5,7 @@
 **A rate-limited, cache-first web scraper with a polished terminal UI — that treats every host with respect.**
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-8%20passing-brightgreen)](scraper/tests/)
+[![Tests](https://img.shields.io/badge/tests-10%20passing-brightgreen)](tests/)
 [![Modes](https://img.shields.io/badge/modes-book%20%7C%20generic-blueviolet)](#two-modes)
 [![UI](https://img.shields.io/badge/ui-rich%20terminal-FF69B4)](https://github.com/Textualize/rich)
 [![Ethics](https://img.shields.io/badge/robots.txt-checked-success)](#%EF%B8%8F-politeness--ethics)
@@ -19,16 +19,17 @@ The Polite Scraper crawls websites the way a good citizen would: it identifies i
 Give it a URL — it figures out the rest.
 
 ```bash
-python scraper/src/main.py https://books.toscrape.com
+python -m polite_scraper https://books.toscrape.com
 ```
 
 ```
 ╭───────────────────────────── The Polite Scraper ─────────────────────────────╮
 │ Target      https://books.toscrape.com/                                      │
 │ Mode        book                                                             │
+│ Run folder  data/runs/books-toscrape-com                                     │
 │ Max pages   3                                                                │
 │ Min delay   0.5s between requests                                            │
-│ Cache       scraper/cache                                                    │
+│ Cache       data/cache                                                       │
 ╰───────── polite by design — rate-limited, cached, identify-yourself ─────────╯
 
 ───────────────────────── Discovering catalogue pages ──────────────────────────
@@ -81,19 +82,30 @@ cd polite_scapper
 
 python3 -m venv venv
 source venv/bin/activate
-pip install -r scraper/requirements.txt
+pip install -r requirements.txt
 ```
 
 ```bash
 # Book catalogue (auto-detected)
-python scraper/src/main.py https://books.toscrape.com
+python -m polite_scraper https://books.toscrape.com
 
 # Any other website, deeper crawl
-python scraper/src/main.py https://quotes.toscrape.com --mode generic --pages 5
+python -m polite_scraper https://quotes.toscrape.com --mode generic --pages 5
 
 # Bare domains get https:// added automatically
-python scraper/src/main.py example.com
+python -m polite_scraper example.com
 ```
+
+Every run gets **its own output folder**, named after the website:
+
+```
+data/runs/
+├── books-toscrape-com/     ← books.toscrape.com run
+├── quotes-toscrape-com/    ← quotes.toscrape.com run
+└── my-domain-org-2/        ← third run on my-domain.org (auto-suffixed)
+```
+
+If a folder for that website already exists, you'll be asked to pick a new name — or just press Enter to accept an auto-suffix (`-1`, `-2`, …) so no run ever overwrites another. Override the name with `--name my-custom-run`.
 
 ## ⌨️ CLI Reference
 
@@ -112,13 +124,14 @@ usage: polite-scraper [-h] [--mode {auto,book,generic}] [--pages PAGES]
 | `--delay SEC` | Minimum delay between live requests | `0.5` |
 | `--timeout SEC` | Request timeout | `10` |
 | `--force` | Ignore the local cache, re-fetch everything | off |
+| `--name NAME` | Custom run folder name (default: derived from the website) | auto |
 | `-v, --verbose` | Show per-request logs and raw record checkpoints | off |
 
 Environment variables still work for `USER_AGENT`, `TIMEOUT`, `MIN_DELAY_SECONDS` and `BROKEN_TEST_URL` — CLI flags win when both are set.
 
 ## 📁 Output
 
-Everything lands in `scraper/output/`:
+Every run writes into its own folder under `data/runs/`:
 
 | File | Mode | Contents |
 |---|---|---|
@@ -200,7 +213,7 @@ Each stage is isolated — swapping the extractor or the target site never touch
 ## 🧪 Testing
 
 ```bash
-pytest scraper/tests/ -v
+pytest tests/ -v
 ```
 
 Covers price/rating/availability normalization, Pydantic validation failures, broken-page simulation, generic extraction, and CLI config mapping.
@@ -217,4 +230,4 @@ Covers price/rating/availability normalization, Pydantic validation failures, br
 
 ## 📚 More Documentation
 
-The deep-dive — stage-by-stage design decisions, data schema tables, failure-handling hooks, and the internship assignment context — lives in **[`scraper/README.md`](scraper/README.md)**.
+The deep-dive — stage-by-stage design decisions, data schema tables, failure-handling hooks, and the internship assignment context — lives in **[`docs/scraper.md`](docs/scraper.md)****.

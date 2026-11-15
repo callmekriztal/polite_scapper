@@ -3,9 +3,9 @@ from urllib.robotparser import RobotFileParser
 
 import requests
 
-from src import ui
-from src.config import Config
-from src.utils import url_to_cache_filename
+from polite_scraper import ui
+from polite_scraper.config import Config
+from polite_scraper.utils import url_to_cache_filename
 
 
 class Fetcher:

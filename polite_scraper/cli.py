@@ -2,22 +2,25 @@
 
 import argparse
 import os
+import re
+import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
-from src.config import Config
+from polite_scraper.config import Config
 
 USAGE_EXAMPLES = """\
 [bold]Examples:[/]
-  python scraper/src/main.py https://books.toscrape.com
-  python scraper/src/main.py https://en.wikipedia.org --mode generic --pages 10
-  python scraper/src/main.py https://books.toscrape.com --mode book --pages 5 --force
-  python scraper/src/main.py https://example.com -v          # verbose logs
+  python -m polite_scraper https://books.toscrape.com
+  python -m polite_scraper https://en.wikipedia.org --mode generic --pages 10
+  python -m polite_scraper https://books.toscrape.com --mode book --pages 5 --force
+  python -m polite_scraper https://example.com -v          # verbose logs
 """
 
 
 class Parser(argparse.ArgumentParser):
     def error(self, message: str):  # pragma: no cover - argparse hook
-        from src import ui
+        from polite_scraper import ui
 
         ui.error(f"{message}\n")
         ui.console.print(USAGE_EXAMPLES)
@@ -82,6 +85,11 @@ def build_parser() -> Parser:
         action="store_true",
         help="Show detailed per-request logs and raw record checkpoints",
     )
+    parser.add_argument(
+        "--name",
+        default=None,
+        help="Custom name for this run's output folder (default: derived from the website name)",
+    )
     return parser
 
 
@@ -111,8 +119,62 @@ def build_config(args: argparse.Namespace) -> Config:
     return config
 
 
+def derive_run_name(base_url: str) -> str:
+    """Derive a filesystem-safe run folder name from the website, e.g.
+    'https://www.books.toscrape.com/' -> 'books-toscrape'."""
+    host = urlparse(base_url).netloc.lower()
+    host = re.sub(r"^www\.", "", host)
+    name = re.sub(r"[^a-z0-9-]+", "-", host).strip("-")
+    return name or "run"
+
+
+def resolve_output_dir(config: Config, explicit_name: str | None) -> Path:
+    """
+    Resolve the per-run output folder under config.OUTPUT_ROOT.
+
+    The default name comes from the website (e.g. 'books-toscrape'). If the
+    folder already exists, the user is asked to pick a new name or accept an
+    auto-suffix ('books-toscrape-1', 'books-toscrape-2', ...). In
+    non-interactive sessions the auto-suffix is applied silently, so runs
+    never overwrite a previous project's output.
+    """
+    base_name = (explicit_name or derive_run_name(config.BASE_URL)).strip()
+    base_name = re.sub(r"[^a-zA-Z0-9_-]+", "-", base_name).strip("-") or "run"
+
+    candidate = config.OUTPUT_ROOT / base_name
+    if not candidate.exists():
+        return candidate
+
+    # Collision: find the next free suffix
+    suffix = 1
+    while (config.OUTPUT_ROOT / f"{base_name}-{suffix}").exists():
+        suffix += 1
+    auto_name = f"{base_name}-{suffix}"
+
+    if not sys.stdin.isatty():
+        from polite_scraper import ui
+
+        ui.info(f"Output folder '{base_name}' already exists — using '{auto_name}'")
+        return config.OUTPUT_ROOT / auto_name
+
+    # Interactive: let the user rename or accept the auto-suffix
+    from polite_scraper import ui
+
+    ui.warn(f"Output folder '{base_name}' already exists.")
+    while True:
+        answer = input(
+            f"  New folder name [{auto_name}]: "
+        ).strip()
+        answer = re.sub(r"[^a-zA-Z0-9_-]+", "-", answer).strip("-")
+        if not answer:
+            return config.OUTPUT_ROOT / auto_name
+        if not (config.OUTPUT_ROOT / answer).exists():
+            return config.OUTPUT_ROOT / answer
+        ui.warn(f"'{answer}' also exists — pick another name")
+
+
 def ensure_url_provided(args: argparse.Namespace) -> bool:
-    from src import ui
+    from polite_scraper import ui
 
     if args.url:
         return True

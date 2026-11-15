@@ -41,7 +41,7 @@ python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install -r scraper/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### 2. Run Scraper
@@ -50,13 +50,13 @@ Give the website as the first argument:
 
 ```bash
 # Book mode (auto-detected): books.toscrape.com catalogue
-python scraper/src/main.py https://books.toscrape.com
+python -m polite_scraper https://books.toscrape.com
 
 # Generic mode: any website (pages metadata: title, h1, headings, links, word counts)
-python scraper/src/main.py https://quotes.toscrape.com --mode generic --pages 5
+python -m polite_scraper https://quotes.toscrape.com --mode generic --pages 5
 
 # Any URL without a scheme gets https:// added automatically
-python scraper/src/main.py example.com
+python -m polite_scraper example.com
 ```
 
 **CLI options**
@@ -70,15 +70,16 @@ python scraper/src/main.py example.com
 | `--delay SEC` | Minimum delay between network requests | `0.5` |
 | `--timeout SEC` | Request timeout | `10` |
 | `--force` | Ignore local HTML cache, re-fetch everything | off |
+| `--name NAME` | Custom run folder name (default: derived from the website) | auto |
 | `-v, --verbose` | Show per-request logs and raw record checkpoints | off |
 
-**Output files** (in `scraper/output/`): `books.json` (book mode), `pages.json` (generic mode), `errors.json`, `run-report.json`.
+**Output files** (in `data/runs/<site-name>/`): `books.json` (book mode), `pages.json` (generic mode), `errors.json`, `run-report.json`. Each run gets its own folder named after the website; if that folder already exists, the run is suffixed (`-1`, `-2`, ...) or renamed via `--name`, so nothing is ever overwritten.
 
 **Polished terminal UI**: progress bars, a run summary table, and an error table are always shown; low-level fetch/cache logs and raw-record checkpoints appear with `-v`.
 
 ### 3. Run Tests
 ```bash
-pytest scraper/tests/ -v
+pytest tests/ -v
 ```
 
 ---
@@ -86,29 +87,37 @@ pytest scraper/tests/ -v
 ## Project Structure
 
 ```
-scraper/
-├── src/
-│   ├── main.py          # Entrypoint & pipeline coordinator (CLI)
-│   ├── cli.py           # Argument parsing & config mapping
-│   ├── ui.py            # Rich-based terminal UI (progress, tables, panels)
-│   ├── config.py        # Centralized settings & simulation hooks
-│   ├── fetcher.py       # HTTP client with caching, robots.txt helper & 500ms delay
-│   ├── crawler.py       # Catalogue discovery & pagination handler (book mode)
-│   ├── generic.py       # Generic site crawler/extractor (any website)
-│   ├── extractor.py     # BeautifulSoup HTML detail extractor (book mode)
-│   ├── models.py        # Pydantic data schemas (BookRecord, PageRecord)
-│   ├── validator.py     # Validation logic & error handler
-│   ├── reporter.py      # Output & JSON report generator
-│   └── utils.py         # Normalization & URL helper utilities
-├── cache/               # Saved raw HTML files (catalogue & details)
-├── output/
-│   ├── books.json       # Validated scraped book records (book mode)
-│   ├── pages.json       # Validated scraped page records (generic mode)
-│   ├── errors.json      # Validation/fetch errors log
-│   └── run-report.json  # Comprehensive run execution report
+polite_scrapper/
+├── polite_scraper/          # The scraper package (python -m polite_scraper)
+│   ├── main.py              # Entrypoint & pipeline coordinator (CLI)
+│   ├── cli.py               # Argument parsing, config mapping & run-folder naming
+│   ├── ui.py                # Rich-based terminal UI (progress, tables, panels)
+│   ├── config.py            # Centralized settings & simulation hooks
+│   ├── fetcher.py           # HTTP client with caching, robots.txt helper & 500ms delay
+│   ├── crawler.py           # Catalogue discovery & pagination handler (book mode)
+│   ├── generic.py           # Generic site crawler/extractor (any website)
+│   ├── extractor.py         # BeautifulSoup HTML detail extractor (book mode)
+│   ├── models.py            # Pydantic data schemas (BookRecord, PageRecord)
+│   ├── validator.py         # Validation logic & error handler
+│   ├── reporter.py          # Output & JSON report generator
+│   ├── __main__.py          # python -m polite_scraper entrypoint
+│   └── utils.py             # Normalization & URL helper utilities
 ├── tests/
-│   └── test_scraper.py  # Pytest suite
+│   └── test_scraper.py      # Pytest suite
+├── data/
+│   ├── cache/               # Saved raw HTML files (shared across runs, gitignored)
+│   └── runs/                # One output folder per website/run
+│       └── <site-name>/     # e.g. books-toscrape-com/
+│           ├── books.json   # Validated book records (book mode)
+│           ├── pages.json   # Validated page records (generic mode)
+│           ├── errors.json  # Validation/fetch errors log
+│           └── run-report.json  # Run execution report
+├── docs/
+│   ├── scraper.md           # This document
+│   ├── AI-VS-ME.md          # AI-vs-manual evaluation report
+│   └── ai-version/          # Reference AI implementation
 ├── README.md
+├── .gitignore
 └── requirements.txt
 ```
 
@@ -116,7 +125,7 @@ scraper/
 
 ## Data Schema
 
-Each record stored in `output/books.json` satisfies the following Pydantic schema (`BookRecord`):
+Each record stored in `data/runs/<site-name>/books.json` satisfies the following Pydantic schema (`BookRecord`):
 
 | Field | Type | Description |
 |---|---|---|
@@ -143,17 +152,17 @@ Each record stored in `output/books.json` satisfies the following Pydantic schem
 
 1. **Classify**: Verify target scope and terms.
 2. **Fetch**: Perform GET request using identifying `User-Agent` and status checks.
-3. **Cache**: Store downloaded HTML in `cache/` to make subsequent runs instantaneous and offline-capable.
+3. **Cache**: Store downloaded HTML in `data/cache/` to make subsequent runs instantaneous and offline-capable.
 4. **Discover**: Traverse pagination links on catalogue pages 1 to 3 to extract 60 unique product URLs.
 5. **Extract & Normalize**: Parse HTML selectors and derive normalized numeric `price_gbp`.
-6. **Validate**: Validate data using Pydantic; divert broken records to `output/errors.json`.
-7. **Store & Report**: Save clean output to `output/books.json` and performance metrics to `output/run-report.json`.
+6. **Validate**: Validate data using Pydantic; divert broken records to `errors.json`.
+7. **Store & Report**: Save clean output to the run folder (books.json / pages.json) and performance metrics to run-report.json.
 
 ---
 
 ## Politeness & Ethics Rules
 
-- **Identifying User-Agent**: Configurable via `USER_AGENT` environment variable; defaults to `FlyRankInternshipA9/1.0 (+https://github.com/YOUR_USERNAME/YOUR_REPO)`.
+- **Identifying User-Agent**: Configurable via `USER_AGENT` environment variable; defaults to `PoliteScraper/1.0 (+https://github.com/callmekriztal/polite_scapper)`.
 - **robots.txt (generic mode)**: The generic crawler fetches and consults `robots.txt` for every site before crawling and aborts if our User-Agent is disallowed.
 - **Request Timeout**: Strict 10-second timeout on all network requests to avoid lingering open sockets.
 - **Minimum 500 ms Delay**: Enforced rate limiting (`time.sleep`) between live network HTTP requests. Cached reads execute without artificial sleep.
@@ -172,12 +181,12 @@ Each record stored in `output/books.json` satisfies the following Pydantic schem
 ## Failure Handling & Broken Page Simulation
 
 The scraper is designed to survive invalid pages or network anomalies without crashing the whole process:
-- Any record failing validation or detail page extraction is captured in `output/errors.json` with reason details.
+- Any record failing validation or detail page extraction is captured in the run folder errors.json with reason details.
 - To test broken page resilience, set the environment variable or config property `BROKEN_TEST_URL`:
   ```bash
-  BROKEN_TEST_URL="https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html" python scraper/src/main.py https://books.toscrape.com
+  BROKEN_TEST_URL="https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html" python -m polite_scraper https://books.toscrape.com
   ```
-  The scraper logs the simulated failure into `output/errors.json` and continues processing all remaining 59 records.
+  The scraper logs the simulated failure into the run folder errors.json and continues processing all remaining 59 records.
 
 ---
 

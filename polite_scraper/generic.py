@@ -10,10 +10,10 @@ from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 
-from src import ui
-from src.config import Config
-from src.fetcher import Fetcher
-from src.utils import clean_text, make_absolute_url
+from polite_scraper import ui
+from polite_scraper.config import Config
+from polite_scraper.fetcher import Fetcher
+from polite_scraper.utils import clean_text, make_absolute_url
 
 
 class GenericExtractor:

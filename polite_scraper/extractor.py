@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 import requests
 from bs4 import BeautifulSoup
-from src.config import Config
-from src.fetcher import Fetcher
-from src.utils import (
+from polite_scraper.config import Config
+from polite_scraper.fetcher import Fetcher
+from polite_scraper.utils import (
     clean_text,
     normalize_availability,
     normalize_price,

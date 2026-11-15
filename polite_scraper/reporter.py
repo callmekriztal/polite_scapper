@@ -3,13 +3,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from src import ui
-from src.config import Config
+from polite_scraper import ui
+from polite_scraper.config import Config
 
 
 @dataclass
 class RunMetrics:
     run_timestamp: str
+    run_name: str
     mode: str
     target_url: str
     duration_seconds: float

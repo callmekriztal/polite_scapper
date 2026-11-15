@@ -77,10 +77,11 @@ def make_progress() -> Progress:
     )
 
 
-def banner(target_url: str, mode: str, pages: int, delay: float, cache_dir: str) -> None:
+def banner(target_url: str, mode: str, pages: int, delay: float, cache_dir: str, run_dir: str) -> None:
     text = (
         f"[bold]Target[/]      {target_url}\n"
         f"[bold]Mode[/]        {mode}\n"
+        f"[bold]Run folder[/]  {run_dir}\n"
         f"[bold]Max pages[/]   {pages}\n"
         f"[bold]Min delay[/]   {delay}s between requests\n"
         f"[bold]Cache[/]       {cache_dir}"

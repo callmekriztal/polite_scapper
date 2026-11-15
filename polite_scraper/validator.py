@@ -1,6 +1,6 @@
 from typing import Any
 from pydantic import ValidationError
-from src.models import BookRecord, PageRecord
+from polite_scraper.models import BookRecord, PageRecord
 
 class RecordValidator:
     """Validates raw extracted records against Pydantic schema."""

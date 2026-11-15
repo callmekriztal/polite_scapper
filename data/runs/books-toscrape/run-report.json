@@ -1,0 +1,13 @@
+{
+  "run_timestamp": "2026-11-15T03:34:21.970551+00:00",
+  "mode": "generic",
+  "target_url": "https://www.scrapingbee.com/blog/web-scraping-rust/",
+  "duration_seconds": 0.828,
+  "pages_crawled": 4,
+  "links_discovered": 3,
+  "records_validated": 3,
+  "failed_records": 0,
+  "cache_hits": 1,
+  "network_fetches": 3,
+  "broken_pages": 0
+}

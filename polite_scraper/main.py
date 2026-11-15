@@ -7,17 +7,17 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-# Add scraper root to Python path if needed
+# Allow running as a plain script: python polite_scraper/main.py
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src import cli, ui
-from src.config import Config
-from src.crawler import CatalogueCrawler
-from src.extractor import BookExtractor
-from src.fetcher import Fetcher
-from src.generic import GenericSiteScraper
-from src.reporter import Reporter, RunMetrics
-from src.validator import RecordValidator
+from polite_scraper import cli, ui
+from polite_scraper.config import Config
+from polite_scraper.crawler import CatalogueCrawler
+from polite_scraper.extractor import BookExtractor
+from polite_scraper.fetcher import Fetcher
+from polite_scraper.generic import GenericSiteScraper
+from polite_scraper.reporter import Reporter, RunMetrics
+from polite_scraper.validator import RecordValidator
 
 
 def resolve_mode_and_start(config: Config, fetcher: Fetcher, requested_mode: str) -> tuple[str, str]:
@@ -143,6 +143,8 @@ def run(args) -> int:
         return 2
 
     config = cli.build_config(args)
+    run_dir = cli.resolve_output_dir(config, args.name)
+    config.OUTPUT_DIR = run_dir
     config.ensure_directories()
 
     fetcher = Fetcher(config)
@@ -156,6 +158,7 @@ def run(args) -> int:
         pages=config.MAX_CATALOGUE_PAGES,
         delay=config.MIN_DELAY_SECONDS,
         cache_dir=str(config.CACHE_DIR),
+        run_dir=str(run_dir.relative_to(config.BASE_DIR)),
     )
 
     start_time = time.time()
@@ -173,6 +176,7 @@ def run(args) -> int:
 
     metrics = RunMetrics(
         run_timestamp=run_timestamp,
+        run_name=run_dir.name,
         mode=mode,
         target_url=config.BASE_URL,
         duration_seconds=duration,

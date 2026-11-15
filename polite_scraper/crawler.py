@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
-from src.config import Config
-from src.fetcher import Fetcher
-from src.utils import make_absolute_url
+from polite_scraper.config import Config
+from polite_scraper.fetcher import Fetcher
+from polite_scraper.utils import make_absolute_url
 
 class DiscoveryResult:
     def __init__(self, catalogue_pages_count: int, discovered_count: int, book_urls: list[dict]):

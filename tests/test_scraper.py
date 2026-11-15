@@ -1,16 +1,16 @@
 import sys
 from pathlib import Path
 
-# Ensure scraper root is in python path for tests
+# Ensure repo root is in python path for tests
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pytest
-from src.config import Config
-from src.crawler import CatalogueCrawler
-from src.extractor import BookExtractor
-from src.fetcher import Fetcher
-from src.utils import normalize_price, normalize_rating, clean_text
-from src.validator import RecordValidator
+from polite_scraper.config import Config
+from polite_scraper.crawler import CatalogueCrawler
+from polite_scraper.extractor import BookExtractor
+from polite_scraper.fetcher import Fetcher
+from polite_scraper.utils import normalize_price, normalize_rating, clean_text
+from polite_scraper.validator import RecordValidator
 
 def test_price_normalization():
     assert normalize_price("£51.77") == 51.77
@@ -67,7 +67,7 @@ def test_broken_detail_page_simulation(tmp_path):
 
 
 def test_generic_extractor_basic_page():
-    from src.generic import GenericExtractor
+    from polite_scraper.generic import GenericExtractor
 
     html = """
     <html>
@@ -93,7 +93,7 @@ def test_generic_extractor_basic_page():
 
 
 def test_generic_page_validation_rejects_empty_title():
-    from src.validator import RecordValidator
+    from polite_scraper.validator import RecordValidator
 
     raw = {
         "url": "https://example.com/",
@@ -115,7 +115,7 @@ def test_generic_page_validation_rejects_empty_title():
 
 def test_cli_build_config():
     import argparse
-    from src.cli import build_config, build_parser
+    from polite_scraper.cli import build_config, build_parser
 
     parser = build_parser()
     args = parser.parse_args(["example.com", "--pages", "5", "--max-links", "12",
@@ -126,3 +126,37 @@ def test_cli_build_config():
     assert config.MAX_LINKS_PER_PAGE == 12
     assert config.MIN_DELAY_SECONDS == 1.5
     assert config.FORCE_REFRESH is True
+
+
+def test_derive_run_name():
+    from polite_scraper.cli import derive_run_name
+
+    # Full host (including TLD) keeps run folders unambiguous: example.com vs example.org
+    assert derive_run_name("https://books.toscrape.com/") == "books-toscrape-com"
+    assert derive_run_name("https://www.example.com") == "example-com"
+    assert derive_run_name("http://en.wikipedia.org/wiki/Main_Page") == "en-wikipedia-org"
+
+
+def test_output_dir_auto_suffix_on_collision(tmp_path, monkeypatch):
+    from polite_scraper.cli import resolve_output_dir
+    from polite_scraper.config import Config
+
+    config = Config()
+    config.BASE_URL = "https://example.com/"
+    config.OUTPUT_ROOT = tmp_path
+
+    # First run gets the plain name
+    first = resolve_output_dir(config, None)
+    assert first.name == "example-com"
+    first.mkdir()
+
+    # Second run on the same site must not overwrite: auto-suffix -1
+    second = resolve_output_dir(config, None)
+    assert second.name == "example-com-1"
+
+    # Explicit names collide too
+    third = resolve_output_dir(config, "my-run")
+    assert third.name == "my-run"
+    third.mkdir()
+    fourth = resolve_output_dir(config, "my-run")
+    assert fourth.name == "my-run-1"
