@@ -5,7 +5,6 @@ stays quiet and polished by default, and verbose (--verbose / -v) turns on
 the detailed per-request logs and checkpoints.
 """
 
-import json
 from typing import Any
 
 from rich.console import Console
@@ -37,10 +36,6 @@ _SPLASH_ART = r"""
 def set_verbose(value: bool) -> None:
     global _VERBOSE
     _VERBOSE = value
-
-
-def is_verbose() -> bool:
-    return _VERBOSE
 
 
 def debug(message: str) -> None:

@@ -137,7 +137,7 @@ def test_derive_run_name():
     assert derive_run_name("http://en.wikipedia.org/wiki/Main_Page") == "en-wikipedia-org"
 
 
-def test_output_dir_auto_suffix_on_collision(tmp_path, monkeypatch):
+def test_output_dir_auto_suffix_on_collision(tmp_path):
     from polite_scraper.cli import resolve_output_dir
     from polite_scraper.config import Config
 
@@ -160,3 +160,64 @@ def test_output_dir_auto_suffix_on_collision(tmp_path, monkeypatch):
     third.mkdir()
     fourth = resolve_output_dir(config, "my-run")
     assert fourth.name == "my-run-1"
+
+
+def test_crawler_records_failed_catalogue_page(tmp_path):
+    """A failing catalogue page must not crash discovery: the failure is
+    recorded and whatever was discovered before it is kept."""
+    from unittest.mock import patch
+
+    import requests
+
+    config = Config()
+    config.CACHE_DIR = tmp_path / "cache"
+    config.OUTPUT_DIR = tmp_path / "output"
+    config.BASE_URL = "https://books.toscrape.com/"
+    config.START_URL = config.toscrape_start_url()
+
+    fetcher = Fetcher(config)
+    crawler = CatalogueCrawler(config, fetcher)
+
+    with patch.object(Fetcher, "fetch", side_effect=requests.ConnectionError("boom")):
+        result = crawler.discover_books()
+
+    assert result.book_urls == []
+    assert result.catalogue_pages_count == 0
+    assert result.failed_pages == [{
+        "product_url": config.START_URL,
+        "reason": "Catalogue page fetch failed: boom",
+    }]
+
+
+def test_reporter_write_failure_is_graceful(tmp_path):
+    """An unwritable output location must not crash the run after all the
+    scraping work is done: save_* report the error and return None."""
+    from polite_scraper.models import BookRecord
+    from polite_scraper.reporter import Reporter
+
+    blocker = tmp_path / "not-a-folder"
+    blocker.write_text("I am a file, not a directory")
+
+    config = Config()
+    config.OUTPUT_DIR = blocker
+    reporter = Reporter(config)
+
+    record = BookRecord(
+        title="Test",
+        product_url="https://books.toscrape.com/catalogue/t_1/index.html",
+        price_text="£10.00",
+        price_gbp=10.0,
+        availability_text="In stock",
+        rating_text="One",
+        description=None,
+        source_page="https://books.toscrape.com/catalogue/page-1.html",
+        fetched_at="2026-09-18T10:00:00+00:00",
+    )
+    assert reporter.save_books([record]) is None
+    assert reporter.save_errors([]) is None
+
+    # Sanity check: a writable location still returns a real path
+    config_ok = Config()
+    config_ok.OUTPUT_DIR = tmp_path / "ok"
+    path = Reporter(config_ok).save_errors([])
+    assert path is not None and path.name == "errors.json"

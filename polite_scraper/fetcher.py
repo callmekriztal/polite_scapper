@@ -47,17 +47,30 @@ class Fetcher:
         cache_path.write_text(html_content, encoding="utf-8")
         return html_content, False
 
+    def _throttle(self) -> None:
+        """Respect rate limit of at least MIN_DELAY_SECONDS between network requests."""
+        now = time.time()
+        elapsed = now - self.last_request_time
+        if elapsed < self.config.MIN_DELAY_SECONDS:
+            time_to_sleep = self.config.MIN_DELAY_SECONDS - elapsed
+            time.sleep(time_to_sleep)
+
     def fetch_robots_txt(self, base_url: str) -> RobotFileParser | None:
         """
         Fetch robots.txt for a site. Returns a parser, or None if no robots.txt
         exists / it cannot be fetched (treated as "no rules").
+        Like every other network request, it is rate-limited and counted.
         """
         robots_url = base_url.rstrip("/") + "/robots.txt"
+        self._throttle()
+        ui.debug(f"FETCH      {robots_url} (robots.txt) ...")
+        self.last_request_time = time.time()
         try:
             response = self.session.get(robots_url, timeout=self.config.TIMEOUT)
         except requests.RequestException as e:
             ui.debug(f"robots.txt fetch failed for {robots_url}: {e}")
             return None
+        self.network_fetches += 1
         if response.status_code != 200:
             ui.debug(f"robots.txt not available ({response.status_code}) at {robots_url}")
             return None
@@ -67,12 +80,7 @@ class Fetcher:
         return parser
 
     def _network_get(self, url: str) -> str:
-        # Respect rate limit of at least MIN_DELAY_SECONDS between network requests
-        now = time.time()
-        elapsed = now - self.last_request_time
-        if elapsed < self.config.MIN_DELAY_SECONDS:
-            time_to_sleep = self.config.MIN_DELAY_SECONDS - elapsed
-            time.sleep(time_to_sleep)
+        self._throttle()
 
         # Make network request
         ui.debug(f"FETCH      {url} ...")

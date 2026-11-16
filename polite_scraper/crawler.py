@@ -4,10 +4,18 @@ from polite_scraper.fetcher import Fetcher
 from polite_scraper.utils import make_absolute_url
 
 class DiscoveryResult:
-    def __init__(self, catalogue_pages_count: int, discovered_count: int, book_urls: list[dict]):
+    def __init__(
+        self,
+        catalogue_pages_count: int,
+        discovered_count: int,
+        book_urls: list[dict],
+        failed_pages: list[dict] | None = None,
+    ):
         self.catalogue_pages_count = catalogue_pages_count
         self.discovered_count = discovered_count
         self.book_urls = book_urls  # List of dicts: {"product_url": ..., "source_page": ...}
+        # Catalogue pages that could not be fetched: {"product_url": <page>, "reason": ...}
+        self.failed_pages = failed_pages or []
 
 class CatalogueCrawler:
     """Discovers book URLs by crawling catalogue pagination."""
@@ -20,10 +28,20 @@ class CatalogueCrawler:
         current_url = self.config.START_URL
         pages_processed = 0
         discovered_entries = []
+        failed_pages = []
         seen_urls = set()
 
         while current_url and pages_processed < self.config.MAX_CATALOGUE_PAGES:
-            html_content, _ = self.fetcher.fetch(current_url)
+            try:
+                html_content, _ = self.fetcher.fetch(current_url)
+            except Exception as ex:
+                # An unfetchable catalogue page ends pagination: keep everything
+                # discovered so far and record the failure instead of crashing.
+                failed_pages.append({
+                    "product_url": current_url,
+                    "reason": f"Catalogue page fetch failed: {ex}",
+                })
+                break
             pages_processed += 1
 
             soup = BeautifulSoup(html_content, "html.parser")
@@ -55,5 +73,6 @@ class CatalogueCrawler:
         return DiscoveryResult(
             catalogue_pages_count=pages_processed,
             discovered_count=len(discovered_entries),
-            book_urls=discovered_entries
+            book_urls=discovered_entries,
+            failed_pages=failed_pages,
         )

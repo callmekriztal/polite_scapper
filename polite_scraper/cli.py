@@ -127,7 +127,8 @@ def build_config(args: argparse.Namespace) -> Config:
 
 def derive_run_name(base_url: str) -> str:
     """Derive a filesystem-safe run folder name from the website, e.g.
-    'https://www.books.toscrape.com/' -> 'books-toscrape'."""
+    'https://www.books.toscrape.com/' -> 'books-toscrape-com' (TLD kept so
+    example.com and example.org never collide)."""
     host = urlparse(base_url).netloc.lower()
     host = re.sub(r"^www\.", "", host)
     name = re.sub(r"[^a-z0-9-]+", "-", host).strip("-")

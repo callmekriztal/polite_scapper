@@ -6,7 +6,7 @@ robots.txt-checked) and extracts useful page metadata from each page.
 
 from collections import deque
 from datetime import datetime, timezone
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 

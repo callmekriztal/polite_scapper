@@ -50,7 +50,7 @@ def resolve_mode_and_start(config: Config, fetcher: Fetcher, requested_mode: str
     return ("book", book_start) if looks_like_book_catalogue else ("generic", given_url)
 
 
-def run_book_mode(config: Config, fetcher: Fetcher, reporter: Reporter) -> tuple[list, list, dict]:
+def run_book_mode(config: Config, fetcher: Fetcher) -> tuple[list, list, dict]:
     """Crawl catalogue pages, extract & validate books. Returns (validated, errors, info)."""
     crawler = CatalogueCrawler(config, fetcher)
     extractor = BookExtractor(config, fetcher)
@@ -63,14 +63,17 @@ def run_book_mode(config: Config, fetcher: Fetcher, reporter: Reporter) -> tuple
     ui.success(
         f"{discovery.catalogue_pages_count} catalogue pages crawled — "
         f"{len(discovery.book_urls)} unique book URLs"
+        + (f" — {len(discovery.failed_pages)} page(s) unreachable" if discovery.failed_pages else "")
     )
     ui.checkpoint("Discovery", {
         "catalogue_pages": discovery.catalogue_pages_count,
         "unique_urls": len(discovery.book_urls),
+        "failed_pages": len(discovery.failed_pages),
     })
 
     ui.stage("Extracting & validating book details")
     validated_records, error_records = [], []
+    error_records.extend(discovery.failed_pages)
     broken_pages = 0
     checkpoint_shown = False
 
@@ -110,7 +113,7 @@ def run_book_mode(config: Config, fetcher: Fetcher, reporter: Reporter) -> tuple
     return validated_records, error_records, {"broken_pages": broken_pages}
 
 
-def run_generic_mode(config: Config, fetcher: Fetcher, reporter: Reporter) -> tuple[list, list, dict]:
+def run_generic_mode(config: Config, fetcher: Fetcher) -> tuple[list, list, dict]:
     """BFS-crawl any site and extract page metadata. Returns (validated, errors, info)."""
     scraper = GenericSiteScraper(config, fetcher)
 
@@ -168,10 +171,10 @@ def run(args) -> int:
     run_timestamp = datetime.now(timezone.utc).isoformat()
 
     if mode == "book":
-        validated, errors, info = run_book_mode(config, fetcher, reporter)
+        validated, errors, info = run_book_mode(config, fetcher)
         records_filename, records_path = "books.json", reporter.save_books(validated)
     else:
-        validated, errors, info = run_generic_mode(config, fetcher, reporter)
+        validated, errors, info = run_generic_mode(config, fetcher)
         records_filename, records_path = "pages.json", reporter.save_pages(validated)
 
     duration = round(time.time() - start_time, 3)
@@ -203,11 +206,14 @@ def run(args) -> int:
         ("Failed", len(errors)),
         ("Duration", f"{duration}s"),
     ])
-    ui.files_table([
-        (records_filename, str(records_path)),
-        ("errors.json", str(errors_path)),
-        ("run-report.json", str(report_path)),
-    ])
+    output_files = []
+    if records_path:
+        output_files.append((records_filename, str(records_path)))
+    if errors_path:
+        output_files.append(("errors.json", str(errors_path)))
+    if report_path:
+        output_files.append(("run-report.json", str(report_path)))
+    ui.files_table(output_files)
     ui.errors_table(errors)
 
     return 0
