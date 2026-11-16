@@ -26,6 +26,13 @@ console = Console()
 
 _VERBOSE = False
 
+_SPLASH_ART = r"""
+ ___  ___  _    ___ _____ ___   ___  ___ ___    _   ___ ___ ___
+| _ \/ _ \| |  |_ _|_   _| __| / __|/ __| _ \  /_\ | _ \ __| _ \
+|  _/ (_) | |__ | |  | | | _|  \__ \ (__|   / / _ \|  _/ _||   /
+|_|  \___/|____|___| |_| |___| |___/\___|_|_\/_/ \_\_| |___|_|_\
+"""
+
 
 def set_verbose(value: bool) -> None:
     global _VERBOSE
@@ -74,6 +81,19 @@ def make_progress() -> Progress:
         TimeElapsedColumn(),
         console=console,
         transient=True,
+    )
+
+
+def splash(version: str) -> None:
+    """Opening screen: the project name in big letters, shown once at startup."""
+    console.print(
+        Panel(
+            f"[bold cyan]{_SPLASH_ART}[/]"
+            f"[bold]          version {version}[/]\n"
+            "[dim]   rate-limited · disk-cached · robots-aware · validated[/]",
+            border_style="cyan",
+            padding=(1, 4),
+        )
     )
 
 

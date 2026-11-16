@@ -142,6 +142,9 @@ def run(args) -> int:
     if not cli.ensure_url_provided(args):
         return 2
 
+    from polite_scraper import __version__
+    ui.splash(__version__)
+
     config = cli.build_config(args)
     run_dir = cli.resolve_output_dir(config, args.name)
     config.OUTPUT_DIR = run_dir
