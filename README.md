@@ -1,9 +1,9 @@
 # The Polite Scraper
 
-A rate-limited, cache-first web scraper with a terminal UI. It identifies itself with a custom User-Agent, waits at least 500 ms between live requests, caches every downloaded page so re-runs cost the target server nothing, validates all extracted data against Pydantic schemas, and survives broken pages without crashing.
+A rate-limited, cache-first web scraper with a terminal UI. It identifies itself with a custom User-Agent, waits at least 500 ms between live requests, caches every downloaded page so re-runs cost the target server nothing, validates all extracted data against Pydantic schemas, and survives broken pages and unreachable pages without crashing.
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-10%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-12%20passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![PyPI](https://img.shields.io/badge/PyPI-polite--scraper-306998)](https://pypi.org/project/polite-scraper/)
 
@@ -12,13 +12,37 @@ polite-scraper https://books.toscrape.com
 ```
 
 ```
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│     ___  ___  _    ___ _____ ___   ___  ___ ___    _   ___ ___ ___           │
+│    | _ \/ _ \| |  |_ _|_   _| __| / __|/ __| _ \  /_\ | _ \ __| _ \          │
+│    |  _/ (_) | |__ | |  | | | _|  \__ \ (__|   / / _ \|  _/ _||   /          │
+│    |_|  \___/|____|___| |_| |___| |___/\___|_|_\/_/ \_\_| |___|_|_\          │
+│              version 1.0.2                                                   │
+│       rate-limited · disk-cached · robots-aware · validated                  │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────── The Polite Scraper ─────────────────────────────╮
+│ Target      https://books.toscrape.com/                                      │
+│ Mode        book                                                             │
+│ Run folder  data/runs/books-toscrape-com                                     │
+│ Max pages   3                                                                │
+│ Min delay   0.5s between requests                                            │
+│ Cache       data/cache                                                       │
+╰───────── polite by design — rate-limited, cached, identify-yourself ─────────╯
+
 ───────────────────────── Discovering catalogue pages ──────────────────────────
+
   ✓ 3 catalogue pages crawled — 60 unique book URLs
 
 ───────────────────── Extracting & validating book details ─────────────────────
+
   ✓ 60 valid books, 0 rejected
 
+───────────────────────────────────── Done ─────────────────────────────────────
 ╭──────────────────────────────── Run Summary ─────────────────────────────────╮
+│        Target  https://books.toscrape.com/                                   │
+│          Mode  book                                                          │
 │      Requests  0 network / 64 cache                                          │
 │ Records saved  60                                                            │
 │      Duration  0.772s                                                        │
@@ -179,13 +203,13 @@ Each stage is isolated: replacing the extractor or target site does not affect t
 pytest tests/ -v
 ```
 
-The suite covers price/rating/availability normalization, Pydantic validation failures, broken-page simulation, generic extraction, CLI config mapping, and run-folder collision handling.
+12 offline tests cover price/rating/availability normalization, Pydantic validation failures, broken-page simulation, generic extraction, CLI config mapping, run-folder collision handling, and — added in 1.0.2 — graceful handling of unreachable catalogue pages and unwritable output locations.
 
 ## Politeness and ethics
 
 - Identifying `User-Agent` on every request, configurable via `USER_AGENT`
 - Minimum 500 ms delay between live requests; cache reads never sleep
-- `robots.txt` consulted in generic mode; the run aborts if the agent is disallowed
+- `robots.txt` consulted in generic mode, fetched through the same rate limiter as every other request; the run aborts if the agent is disallowed
 - Only `200 OK` accepted as a successful response
 - Disk caching by default so development re-runs make zero network requests
 
@@ -193,7 +217,7 @@ Do not reuse this tool against a site without checking its rules and terms of se
 
 ## Documentation
 
-Design decisions, data schema tables, failure-handling hooks, and the internship assignment context are documented in [docs/scraper.md](docs/scraper.md).
+The assignment context and data schemas are documented in [docs/scraper.md](docs/scraper.md). A complete study suite — architecture, execution data flow, per-module deep-dives, error handling, and interview preparation — lives in [docs/README.md](docs/README.md).
 
 ## License
 
